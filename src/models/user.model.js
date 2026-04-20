@@ -1,27 +1,37 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
-/**
- * TODO: Define User schema
- *
- * Fields:
- * - name: String, required, trim, minlength 2, maxlength 50
- * - email: String, required, unique, lowercase, trim
- *   Use regex validation: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
- * - password: String, required, minlength 6
- *   IMPORTANT: Add { select: false } so password isn't returned by default
- * - role: String, enum ['user', 'admin'], default 'user'
- *
- * Options:
- * - Enable timestamps (createdAt, updatedAt)
- */
 const userSchema = new mongoose.Schema(
   {
-    // Your schema fields here
+    name: {
+      type: String,
+      required: true,
+      minLength: 2,
+      maxLength: 50,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      validate: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    },
+    password: {
+      type: String,
+      required: true,
+      minLength: 6,
+      select: false,
+    },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
   },
   {
-    // Schema options here
-  }
+    timestamps: true,
+  },
 );
 
 /**
@@ -35,10 +45,23 @@ const userSchema = new mongoose.Schema(
  * Example structure:
  * userSchema.pre('save', async function(next) {
  *   // Only hash if password is modified
- *   
+ *
  *   // Hash password and replace
- *   
+ *
  * });
  */
 
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+
+  try {
+    const hashedPassword = await bcrypt.hash(this.password, 10);
+    this.password = hashedPassword;
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 // TODO: Create and export the User model
+export const User = mongoose.model("User", userSchema);

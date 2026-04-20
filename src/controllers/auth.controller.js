@@ -1,9 +1,9 @@
-import bcrypt from 'bcryptjs';
-import { User } from '../models/user.model.js';
-import { signToken } from '../utils/jwt.js';
+import bcrypt from "bcryptjs";
+import { User } from "../models/user.model.js";
+import { signToken } from "../utils/jwt.js";
 
 /**
- * TODO: Register a new user
+ * Register a new user
  *
  * 1. Extract name, email, password from req.body
  * 2. Check if user with email already exists
@@ -14,6 +14,26 @@ import { signToken } from '../utils/jwt.js';
 export async function register(req, res, next) {
   try {
     // Your code here
+    const { name, email, password } = req.body;
+
+    const existing = await User.findOne({ email });
+
+    if (existing) {
+      return res.status(409).json({
+        error: { message: "Email already exists" },
+      });
+    }
+
+    const newUser = new User({
+      name,
+      email,
+      password,
+    });
+
+    const savedUser = await newUser.save();
+
+    delete savedUser._doc.password;
+    return res.status(201).json(savedUser);
   } catch (error) {
     next(error);
   }
